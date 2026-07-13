@@ -17,7 +17,7 @@ interface Game {
     picture: string | null;
     description: string | null;
     tags: string[];
-    price: number;
+    price: number | null;
     stars: number;
     ratingCount: number;
 }
@@ -32,7 +32,8 @@ async function readGame(response: Response): Promise<Game> {
     return body as Game;
 }
 
-function formatPrice(price: number): string {
+function formatPrice(price: number | null): string {
+    if (price === null) return "가격 정보 없음";
     return price === 0 ? "무료" : `${price.toLocaleString("ko-KR")}원`;
 }
 

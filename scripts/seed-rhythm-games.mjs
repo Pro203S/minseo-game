@@ -49,6 +49,12 @@ const columns = database.prepare("PRAGMA table_info(games)").all();
 if (!columns.some((column) => column.name === "steam_appid")) {
     database.exec("ALTER TABLE games ADD COLUMN steam_appid INTEGER");
 }
+if (!columns.some((column) => column.name === "price_verified")) {
+    database.exec(`
+        ALTER TABLE games ADD COLUMN price_verified INTEGER NOT NULL DEFAULT 0
+        CHECK (price_verified IN (0, 1))
+    `);
+}
 if (!columns.some((column) => column.name === "stars")) {
     database.exec(`
         ALTER TABLE games ADD COLUMN stars REAL NOT NULL DEFAULT 3

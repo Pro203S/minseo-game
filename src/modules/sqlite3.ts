@@ -19,7 +19,7 @@ export interface Game {
     picture: string | null;
     description: string | null;
     tags: string[];
-    price: number;
+    price: number | null;
     stars: number;
     ratingCount: number;
 }
@@ -48,6 +48,12 @@ export interface SearchGamesResult {
     limit: number;
     total: number;
     totalPages: number;
+}
+
+export interface VerifiedPriceRange {
+    min: number;
+    max: number;
+    count: number;
 }
 
 interface GameRow extends Omit<Game, "tags" | "ratingCount"> {
@@ -80,6 +86,8 @@ function openDatabase(): Promise<Database> {
                         description TEXT,
                         tags TEXT NOT NULL DEFAULT '[]',
                         price REAL NOT NULL DEFAULT 0 CHECK (price >= 0),
+                        price_verified INTEGER NOT NULL DEFAULT 0
+                            CHECK (price_verified IN (0, 1)),
                         steam_appid INTEGER,
                         stars REAL NOT NULL DEFAULT 3 CHECK (stars BETWEEN 1 AND 5),
                         rating_count INTEGER NOT NULL DEFAULT 0
@@ -106,6 +114,12 @@ function openDatabase(): Promise<Database> {
                                 migrations.push(
                                     `ALTER TABLE games ADD COLUMN price REAL NOT NULL
                                      DEFAULT 0 CHECK (price >= 0)`,
+                                );
+                            }
+                            if (!columns.some((column) => column.name === "price_verified")) {
+                                migrations.push(
+                                    `ALTER TABLE games ADD COLUMN price_verified INTEGER
+                                     NOT NULL DEFAULT 0 CHECK (price_verified IN (0, 1))`,
                                 );
                             }
                             if (!columns.some((column) => column.name === "steam_appid")) {
@@ -264,8 +278,8 @@ function requireStars(stars: number): number {
 export async function createGame(input: CreateGameInput): Promise<Game> {
     const result = await run(
         `INSERT INTO games
-            (name, picture, description, tags, price, stars)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+            (name, picture, description, tags, price, price_verified, stars)
+         VALUES (?, ?, ?, ?, ?, 1, ?)`,
         [
             requireName(input.name),
             input.picture ?? null,
@@ -287,7 +301,9 @@ export async function createGame(input: CreateGameInput): Promise<Game> {
 
 export async function getGame(id: number): Promise<Game | null> {
     const row = await get<GameRow>(
-        `SELECT id, name, picture, description, tags, price, stars, rating_count
+        `SELECT id, name, picture, description, tags,
+                CASE WHEN price_verified = 1 THEN price ELSE NULL END AS price,
+                stars, rating_count
          FROM games WHERE id = ?`,
         [id],
     );
@@ -297,7 +313,9 @@ export async function getGame(id: number): Promise<Game | null> {
 
 export async function getGames(): Promise<Game[]> {
     const rows = await all<GameRow>(
-        `SELECT id, name, picture, description, tags, price, stars, rating_count
+        `SELECT id, name, picture, description, tags,
+                CASE WHEN price_verified = 1 THEN price ELSE NULL END AS price,
+                stars, rating_count
          FROM games ORDER BY id DESC`,
     );
 
@@ -305,31 +323,56 @@ export async function getGames(): Promise<Game[]> {
 }
 
 export async function getRandomGame(
-    minPrice = 0,
+    minPrice?: number,
     maxPrice?: number,
 ): Promise<Game | null> {
-    const conditions = ["price >= ?"];
-    const parameters: SqlParameter[] = [requirePrice(minPrice)];
+    const conditions: string[] = [];
+    const parameters: SqlParameter[] = [];
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+        conditions.push("price_verified = 1");
+    }
+
+    if (minPrice !== undefined) {
+        conditions.push("price >= ?");
+        parameters.push(requirePrice(minPrice));
+    }
 
     if (maxPrice !== undefined) {
         const normalizedMaxPrice = requirePrice(maxPrice);
-        if (normalizedMaxPrice < minPrice) {
+        if (minPrice !== undefined && normalizedMaxPrice < minPrice) {
             throw new Error("최대 가격은 최소 가격보다 작을 수 없습니다.");
         }
         conditions.push("price <= ?");
         parameters.push(normalizedMaxPrice);
     }
 
+    const where = conditions.length > 0
+        ? `WHERE ${conditions.join(" AND ")}`
+        : "";
+
     const row = await get<GameRow>(
-        `SELECT id, name, picture, description, tags, price, stars, rating_count
+        `SELECT id, name, picture, description, tags,
+                CASE WHEN price_verified = 1 THEN price ELSE NULL END AS price,
+                stars, rating_count
          FROM games
-         WHERE ${conditions.join(" AND ")}
+         ${where}
          ORDER BY RANDOM()
          LIMIT 1`,
         parameters,
     );
 
     return row ? toGame(row) : null;
+}
+
+export async function getVerifiedPriceRange(): Promise<VerifiedPriceRange | null> {
+    const row = await get<VerifiedPriceRange>(
+        `SELECT MIN(price) AS min, MAX(price) AS max, COUNT(*) AS count
+         FROM games
+         WHERE price_verified = 1`,
+    );
+
+    return row && row.count > 0 ? row : null;
 }
 
 export async function searchGames(
@@ -377,7 +420,9 @@ export async function searchGames(
     );
     const total = countRow?.total ?? 0;
     const rows = await all<GameRow>(
-        `SELECT id, name, picture, description, tags, price, stars, rating_count
+        `SELECT id, name, picture, description, tags,
+                CASE WHEN price_verified = 1 THEN price ELSE NULL END AS price,
+                stars, rating_count
          FROM games
          ${where}
          ORDER BY stars DESC, name COLLATE NOCASE ASC
@@ -447,7 +492,7 @@ export async function updateGame(
         parameters.push(JSON.stringify(normalizeTags(input.tags)));
     }
     if (input.price !== undefined) {
-        assignments.push("price = ?");
+        assignments.push("price = ?", "price_verified = 1");
         parameters.push(requirePrice(input.price));
     }
     if (input.stars !== undefined) {

@@ -1,4 +1,4 @@
-import { getRandomGame } from "@/modules/sqlite3";
+import { getRandomGame, getVerifiedPriceRange } from "@/modules/sqlite3";
 import type { NextRequest } from "next/server";
 
 class RequestError extends Error {}
@@ -17,23 +17,36 @@ function parsePrice(value: string | null, field: string): number | undefined {
 export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
-        const min = parsePrice(searchParams.get("min"), "min") ?? 0;
+        const min = parsePrice(searchParams.get("min"), "min");
         const max = parsePrice(searchParams.get("max"), "max");
 
-        if (max !== undefined && min > max) {
+        if (min !== undefined && max !== undefined && min > max) {
             throw new RequestError("min은 max보다 클 수 없습니다.");
         }
 
-        const game = await getRandomGame(min, max);
+        const [game, priceRange] = await Promise.all([
+            getRandomGame(min, max),
+            getVerifiedPriceRange(),
+        ]);
         if (!game) {
             return Response.json(
-                { "message": "해당 가격대의 게임을 찾을 수 없습니다." },
+                {
+                    "message": "해당 가격대의 게임을 찾을 수 없습니다.",
+                    priceRange,
+                },
                 { "status": 404 },
             );
         }
 
         return Response.json(
-            { game, "filters": { min, "max": max ?? null } },
+            {
+                game,
+                "filters": {
+                    "min": min ?? null,
+                    "max": max ?? null,
+                },
+                priceRange,
+            },
             { "headers": { "Cache-Control": "no-store" } },
         );
     } catch (error) {

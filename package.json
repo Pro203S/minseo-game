@@ -10,7 +10,8 @@
     "seed:games": "node --disable-warning=ExperimentalWarning scripts/import-steam-dataset.mjs 10000 && npm run translate:tags",
     "seed:games:live": "node --disable-warning=ExperimentalWarning scripts/seed-steam-games.mjs 10000",
     "seed:rhythm": "node --disable-warning=ExperimentalWarning scripts/seed-rhythm-games.mjs && npm run translate:tags",
-    "translate:tags": "node --disable-warning=ExperimentalWarning scripts/translate-game-tags.mjs"
+    "translate:tags": "node --disable-warning=ExperimentalWarning scripts/translate-game-tags.mjs",
+    "sync:prices": "node --disable-warning=ExperimentalWarning scripts/sync-steam-kr-prices.mjs"
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^7.3.0",
