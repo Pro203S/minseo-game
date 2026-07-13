@@ -55,7 +55,7 @@ export default function RandomPage() {
 
     return (
         <main className={css.page}>
-            <Link className={css.home} href="/"></Link>
+            <Link className={css.home} href="/">민서가 좋아하는 랜덤게임</Link>
 
             <section className={css.center} aria-live="polite">
                 {loading ? (
@@ -85,7 +85,7 @@ export default function RandomPage() {
                             ))}
                         </div>
 
-                        <span className={css.label}>오늘의 랜덤 게임</span>
+                        <span className={css.label}>민서가 추천하는 랜덤게임</span>
                         <div
                             className={css.cover}
                             role="img"
