@@ -1,0 +1,212 @@
+.page {
+    position: relative;
+    display: grid;
+    width: 100%;
+    min-height: 100dvh;
+    place-items: center;
+    overflow: hidden;
+    color: #f7f7f5;
+}
+
+.page::before {
+    position: absolute;
+    width: 680px;
+    height: 680px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .025);
+    filter: blur(120px);
+    content: "";
+}
+
+.home {
+    position: absolute;
+    z-index: 5;
+    top: 30px;
+    left: 34px;
+    color: #fff;
+    font-size: .76rem;
+    font-weight: 400;
+    text-decoration: none;
+}
+
+.center {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    width: min(680px, calc(100% - 40px));
+    min-height: 610px;
+    place-items: center;
+    padding: 65px 0 45px;
+    text-align: center;
+}
+
+.reveal {
+    position: relative;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    flex-direction: column;
+    animation: reveal .65s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.label {
+    margin-bottom: 18px;
+    color: #787878;
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .15em;
+}
+
+.cover {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    width: min(580px, 100%);
+    aspect-ratio: 460 / 215;
+    place-items: center;
+    border: 1px solid #28282c;
+    border-radius: 15px;
+    background: #202024 center / cover no-repeat;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, .45);
+    color: #65656b;
+    font-size: .7rem;
+    letter-spacing: .14em;
+}
+
+.reveal h1 {
+    max-width: 600px;
+    margin: 27px 0 12px;
+    font-size: clamp(2.7rem, 6.5vw, 5.2rem);
+    line-height: .94;
+    letter-spacing: -.065em;
+    overflow-wrap: anywhere;
+}
+
+.meta {
+    display: flex;
+    gap: 8px;
+    color: #9a9aa0;
+    font-size: .75rem;
+}
+
+.meta span {
+    padding: 6px 9px;
+    border-radius: 7px;
+    background: #1d1d20;
+}
+
+.meta span:last-child {
+    color: #f2ce5e;
+}
+
+.actions {
+    display: flex;
+    gap: 9px;
+    margin-top: 28px;
+}
+
+.actions button,
+.actions a,
+.state button {
+    padding: 13px 18px;
+    border: 1px solid #343438;
+    border-radius: 11px;
+    background: #151517;
+    color: #a1a1a7;
+    font: inherit;
+    font-size: .78rem;
+    font-weight: 750;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .2s ease, background .2s ease, color .2s ease;
+}
+
+.actions a {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    border-color: #fff;
+    background: #151517;
+    color: #fff;
+}
+
+.actions button:hover,
+.actions a:hover {
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.actions a:hover {
+    background: #e8e8e8;
+    color: #000;
+}
+
+.state {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 10px;
+    color: #74747a;
+}
+
+.state strong { color: #fff; }
+.state p { margin: 0 0 10px; font-size: .8rem; }
+
+.spinner {
+    width: 30px;
+    height: 30px;
+    border: 2px solid #303034;
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+}
+
+.confetti {
+    position: absolute;
+    z-index: 4;
+    top: 205px;
+    left: 50%;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+}
+
+.confetti i {
+    position: absolute;
+    width: 7px;
+    height: 13px;
+    border-radius: 2px;
+    background: hsl(calc(var(--index) * 47deg), 90%, 62%);
+    opacity: 0;
+    transform: rotate(var(--angle)) translateY(0) scale(.4);
+    animation: burst 1.25s cubic-bezier(.12, .7, .25, 1) var(--delay) both;
+}
+
+@keyframes reveal {
+    from { opacity: 0; transform: scale(.94) translateY(15px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes burst {
+    0% { opacity: 0; transform: rotate(var(--angle)) translateY(0) rotate(0); }
+    12% { opacity: 1; }
+    75% { opacity: 1; }
+    100% { opacity: 0; transform: rotate(var(--angle)) translateY(calc(var(--distance) * -1)) rotate(480deg); }
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 560px) {
+    .home { top: 22px; left: 22px; }
+    .center { min-height: 540px; }
+    .cover { border-radius: 15px; }
+    .reveal h1 { margin-top: 23px; }
+    .confetti { top: 150px; }
+    .actions { width: 100%; }
+    .actions button, .actions a { flex: 1; white-space: nowrap; }
+    .actions a { gap: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal, .spinner, .confetti i { animation: none; }
+}
