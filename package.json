@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:games": "node --disable-warning=ExperimentalWarning scripts/import-steam-dataset.mjs 10000",
+    "seed:games:live": "node --disable-warning=ExperimentalWarning scripts/seed-steam-games.mjs 10000",
+    "seed:rhythm": "node --disable-warning=ExperimentalWarning scripts/seed-rhythm-games.mjs"
   },
   "dependencies": {
     "@react-spring/web": "^10.1.2",

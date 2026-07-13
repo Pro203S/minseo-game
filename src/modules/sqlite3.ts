@@ -20,6 +20,8 @@ export interface Game {
     description: string | null;
     tags: string[];
     price: number;
+    stars: number;
+    comment: number;
 }
 
 export interface CreateGameInput {
@@ -28,6 +30,8 @@ export interface CreateGameInput {
     description?: string | null;
     tags?: string[];
     price: number;
+    stars?: number;
+    comment?: number;
 }
 
 export type UpdateGameInput = Partial<CreateGameInput>;
@@ -60,7 +64,11 @@ function openDatabase(): Promise<Database> {
                         picture TEXT,
                         description TEXT,
                         tags TEXT NOT NULL DEFAULT '[]',
-                        price REAL NOT NULL DEFAULT 0 CHECK (price >= 0)
+                        price REAL NOT NULL DEFAULT 0 CHECK (price >= 0),
+                        steam_appid INTEGER,
+                        stars REAL NOT NULL DEFAULT 3 CHECK (stars BETWEEN 1 AND 5),
+                        comment INTEGER NOT NULL DEFAULT 0
+                            CHECK (comment >= 0 AND comment = CAST(comment AS INTEGER))
                     );
                 `,
                 (schemaError) => {
@@ -77,15 +85,39 @@ function openDatabase(): Promise<Database> {
                                 return;
                             }
 
-                            if (columns.some((column) => column.name === "price")) {
-                                resolve(database);
-                                return;
+                            const migrations: string[] = [];
+
+                            if (!columns.some((column) => column.name === "price")) {
+                                migrations.push(
+                                    `ALTER TABLE games ADD COLUMN price REAL NOT NULL
+                                     DEFAULT 0 CHECK (price >= 0)`,
+                                );
+                            }
+                            if (!columns.some((column) => column.name === "steam_appid")) {
+                                migrations.push(
+                                    "ALTER TABLE games ADD COLUMN steam_appid INTEGER",
+                                );
+                            }
+                            if (!columns.some((column) => column.name === "stars")) {
+                                migrations.push(
+                                    `ALTER TABLE games ADD COLUMN stars REAL NOT NULL
+                                     DEFAULT 3 CHECK (stars BETWEEN 1 AND 5)`,
+                                );
+                            }
+                            if (!columns.some((column) => column.name === "comment")) {
+                                migrations.push(
+                                    `ALTER TABLE games ADD COLUMN comment INTEGER NOT NULL
+                                     DEFAULT 0 CHECK (
+                                         comment >= 0 AND
+                                         comment = CAST(comment AS INTEGER)
+                                     )`,
+                                );
                             }
 
-                            database.run(
-                                `ALTER TABLE games
-                                 ADD COLUMN price REAL NOT NULL DEFAULT 0
-                                 CHECK (price >= 0)`,
+                            database.exec(
+                                `${migrations.join(";")};
+                                 CREATE UNIQUE INDEX IF NOT EXISTS
+                                 games_steam_appid_unique ON games(steam_appid);`,
                                 (migrationError) => {
                                     if (migrationError) {
                                         database.close(() => reject(migrationError));
@@ -200,16 +232,35 @@ function requirePrice(price: number): number {
     return price;
 }
 
+function requireStars(stars: number): number {
+    if (!Number.isFinite(stars) || stars < 1 || stars > 5) {
+        throw new Error("별점은 1 이상 5 이하의 숫자여야 합니다.");
+    }
+
+    return stars;
+}
+
+function requireComment(comment: number): number {
+    if (!Number.isInteger(comment) || comment < 0) {
+        throw new Error("댓글 수는 0 이상의 정수여야 합니다.");
+    }
+
+    return comment;
+}
+
 export async function createGame(input: CreateGameInput): Promise<Game> {
     const result = await run(
-        `INSERT INTO games (name, picture, description, tags, price)
-         VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO games
+            (name, picture, description, tags, price, stars, comment)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
             requireName(input.name),
             input.picture ?? null,
             input.description ?? null,
             JSON.stringify(normalizeTags(input.tags)),
             requirePrice(input.price),
+            requireStars(input.stars ?? 3),
+            requireComment(input.comment ?? 0),
         ],
     );
 
@@ -224,7 +275,8 @@ export async function createGame(input: CreateGameInput): Promise<Game> {
 
 export async function getGame(id: number): Promise<Game | null> {
     const row = await get<GameRow>(
-        "SELECT id, name, picture, description, tags, price FROM games WHERE id = ?",
+        `SELECT id, name, picture, description, tags, price, stars, comment
+         FROM games WHERE id = ?`,
         [id],
     );
 
@@ -233,7 +285,8 @@ export async function getGame(id: number): Promise<Game | null> {
 
 export async function getGames(): Promise<Game[]> {
     const rows = await all<GameRow>(
-        "SELECT id, name, picture, description, tags, price FROM games ORDER BY id DESC",
+        `SELECT id, name, picture, description, tags, price, stars, comment
+         FROM games ORDER BY id DESC`,
     );
 
     return rows.map(toGame);
@@ -241,7 +294,8 @@ export async function getGames(): Promise<Game[]> {
 
 export async function getRandomGame(): Promise<Game | null> {
     const row = await get<GameRow>(
-        "SELECT id, name, picture, description, tags, price FROM games ORDER BY RANDOM() LIMIT 1",
+        `SELECT id, name, picture, description, tags, price, stars, comment
+         FROM games ORDER BY RANDOM() LIMIT 1`,
     );
 
     return row ? toGame(row) : null;
@@ -273,6 +327,14 @@ export async function updateGame(
     if (input.price !== undefined) {
         assignments.push("price = ?");
         parameters.push(requirePrice(input.price));
+    }
+    if (input.stars !== undefined) {
+        assignments.push("stars = ?");
+        parameters.push(requireStars(input.stars));
+    }
+    if (input.comment !== undefined) {
+        assignments.push("comment = ?");
+        parameters.push(requireComment(input.comment));
     }
 
     if (assignments.length === 0) {
