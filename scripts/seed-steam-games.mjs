@@ -45,8 +45,7 @@ await run(`
         price REAL NOT NULL DEFAULT 0 CHECK (price >= 0),
         steam_appid INTEGER,
         stars REAL NOT NULL DEFAULT 3 CHECK (stars BETWEEN 1 AND 5),
-        comment INTEGER NOT NULL DEFAULT 0
-            CHECK (comment >= 0 AND comment = CAST(comment AS INTEGER))
+        rating_count INTEGER NOT NULL DEFAULT 0 CHECK (rating_count >= 0)
     )
 `);
 

@@ -55,13 +55,12 @@ if (!columns.some((column) => column.name === "stars")) {
         CHECK (stars BETWEEN 1 AND 5)
     `);
 }
-if (!columns.some((column) => column.name === "comment")) {
+if (!columns.some((column) => column.name === "rating_count")) {
     database.exec(`
-        ALTER TABLE games ADD COLUMN comment INTEGER NOT NULL DEFAULT 0
-        CHECK (comment >= 0 AND comment = CAST(comment AS INTEGER))
+        ALTER TABLE games ADD COLUMN rating_count INTEGER NOT NULL DEFAULT 0
+        CHECK (rating_count >= 0)
     `);
 }
-
 database.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS games_steam_appid_unique
     ON games(steam_appid)
@@ -69,7 +68,7 @@ database.exec(`
 
 const upsert = database.prepare(`
     INSERT INTO games
-        (name, picture, description, tags, price, steam_appid, stars, comment)
+        (name, picture, description, tags, price, steam_appid, stars, rating_count)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT DO UPDATE SET
         name = excluded.name,
@@ -79,7 +78,7 @@ const upsert = database.prepare(`
         price = excluded.price,
         steam_appid = excluded.steam_appid,
         stars = excluded.stars,
-        comment = excluded.comment
+        rating_count = excluded.rating_count
 `);
 
 database.exec("BEGIN IMMEDIATE");

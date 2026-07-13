@@ -7,15 +7,19 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:games": "node --disable-warning=ExperimentalWarning scripts/import-steam-dataset.mjs 10000",
+    "seed:games": "node --disable-warning=ExperimentalWarning scripts/import-steam-dataset.mjs 10000 && npm run translate:tags",
     "seed:games:live": "node --disable-warning=ExperimentalWarning scripts/seed-steam-games.mjs 10000",
-    "seed:rhythm": "node --disable-warning=ExperimentalWarning scripts/seed-rhythm-games.mjs"
+    "seed:rhythm": "node --disable-warning=ExperimentalWarning scripts/seed-rhythm-games.mjs && npm run translate:tags",
+    "translate:tags": "node --disable-warning=ExperimentalWarning scripts/translate-game-tags.mjs"
   },
   "dependencies": {
+    "@fortawesome/free-solid-svg-icons": "^7.3.0",
+    "@fortawesome/react-fontawesome": "^3.4.0",
     "@react-spring/web": "^10.1.2",
     "next": "16.2.10",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-query": "^3.39.3",
     "sqlite3": "^6.0.1"
   },
   "devDependencies": {

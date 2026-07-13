@@ -21,7 +21,7 @@ export interface Game {
     tags: string[];
     price: number;
     stars: number;
-    comment: number;
+    ratingCount: number;
 }
 
 export interface CreateGameInput {
@@ -31,7 +31,6 @@ export interface CreateGameInput {
     tags?: string[];
     price: number;
     stars?: number;
-    comment?: number;
 }
 
 export type UpdateGameInput = Partial<CreateGameInput>;
@@ -51,8 +50,9 @@ export interface SearchGamesResult {
     totalPages: number;
 }
 
-interface GameRow extends Omit<Game, "tags"> {
+interface GameRow extends Omit<Game, "tags" | "ratingCount"> {
     tags: string;
+    rating_count: number;
 }
 
 declare global {
@@ -82,8 +82,8 @@ function openDatabase(): Promise<Database> {
                         price REAL NOT NULL DEFAULT 0 CHECK (price >= 0),
                         steam_appid INTEGER,
                         stars REAL NOT NULL DEFAULT 3 CHECK (stars BETWEEN 1 AND 5),
-                        comment INTEGER NOT NULL DEFAULT 0
-                            CHECK (comment >= 0 AND comment = CAST(comment AS INTEGER))
+                        rating_count INTEGER NOT NULL DEFAULT 0
+                            CHECK (rating_count >= 0)
                     );
                 `,
                 (schemaError) => {
@@ -119,13 +119,10 @@ function openDatabase(): Promise<Database> {
                                      DEFAULT 3 CHECK (stars BETWEEN 1 AND 5)`,
                                 );
                             }
-                            if (!columns.some((column) => column.name === "comment")) {
+                            if (!columns.some((column) => column.name === "rating_count")) {
                                 migrations.push(
-                                    `ALTER TABLE games ADD COLUMN comment INTEGER NOT NULL
-                                     DEFAULT 0 CHECK (
-                                         comment >= 0 AND
-                                         comment = CAST(comment AS INTEGER)
-                                     )`,
+                                    `ALTER TABLE games ADD COLUMN rating_count INTEGER
+                                     NOT NULL DEFAULT 0 CHECK (rating_count >= 0)`,
                                 );
                             }
 
@@ -222,7 +219,12 @@ function parseTags(value: string): string[] {
 }
 
 function toGame(row: GameRow): Game {
-    return { ...row, tags: parseTags(row.tags) };
+    const { rating_count, ...game } = row;
+    return {
+        ...game,
+        tags: parseTags(row.tags),
+        ratingCount: rating_count,
+    };
 }
 
 function normalizeTags(tags: string[] = []): string[] {
@@ -259,19 +261,11 @@ function requireStars(stars: number): number {
     return stars;
 }
 
-function requireComment(comment: number): number {
-    if (!Number.isInteger(comment) || comment < 0) {
-        throw new Error("댓글 수는 0 이상의 정수여야 합니다.");
-    }
-
-    return comment;
-}
-
 export async function createGame(input: CreateGameInput): Promise<Game> {
     const result = await run(
         `INSERT INTO games
-            (name, picture, description, tags, price, stars, comment)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            (name, picture, description, tags, price, stars)
+         VALUES (?, ?, ?, ?, ?, ?)`,
         [
             requireName(input.name),
             input.picture ?? null,
@@ -279,7 +273,6 @@ export async function createGame(input: CreateGameInput): Promise<Game> {
             JSON.stringify(normalizeTags(input.tags)),
             requirePrice(input.price),
             requireStars(input.stars ?? 3),
-            requireComment(input.comment ?? 0),
         ],
     );
 
@@ -294,7 +287,7 @@ export async function createGame(input: CreateGameInput): Promise<Game> {
 
 export async function getGame(id: number): Promise<Game | null> {
     const row = await get<GameRow>(
-        `SELECT id, name, picture, description, tags, price, stars, comment
+        `SELECT id, name, picture, description, tags, price, stars, rating_count
          FROM games WHERE id = ?`,
         [id],
     );
@@ -304,7 +297,7 @@ export async function getGame(id: number): Promise<Game | null> {
 
 export async function getGames(): Promise<Game[]> {
     const rows = await all<GameRow>(
-        `SELECT id, name, picture, description, tags, price, stars, comment
+        `SELECT id, name, picture, description, tags, price, stars, rating_count
          FROM games ORDER BY id DESC`,
     );
 
@@ -328,7 +321,7 @@ export async function getRandomGame(
     }
 
     const row = await get<GameRow>(
-        `SELECT id, name, picture, description, tags, price, stars, comment
+        `SELECT id, name, picture, description, tags, price, stars, rating_count
          FROM games
          WHERE ${conditions.join(" AND ")}
          ORDER BY RANDOM()
@@ -384,10 +377,10 @@ export async function searchGames(
     );
     const total = countRow?.total ?? 0;
     const rows = await all<GameRow>(
-        `SELECT id, name, picture, description, tags, price, stars, comment
+        `SELECT id, name, picture, description, tags, price, stars, rating_count
          FROM games
          ${where}
-         ORDER BY stars DESC, comment DESC, name COLLATE NOCASE ASC
+         ORDER BY stars DESC, name COLLATE NOCASE ASC
          LIMIT ? OFFSET ?`,
         [...parameters, limit, (page - 1) * limit],
     );
@@ -399,6 +392,35 @@ export async function searchGames(
         total,
         totalPages: Math.ceil(total / limit),
     };
+}
+
+export async function getAvailableTags(): Promise<string[]> {
+    const rows = await all<{ tag: string }>(`
+        SELECT DISTINCT value AS tag
+        FROM games, json_each(games.tags)
+        WHERE json_valid(games.tags) AND trim(value) != ''
+    `);
+
+    return rows
+        .map((row) => row.tag)
+        .sort((left, right) => left.localeCompare(right, "ko"));
+}
+
+export async function rateGame(id: number, rating: number): Promise<Game | null> {
+    if (!Number.isInteger(id) || id < 1) {
+        throw new Error("게임 ID는 1 이상의 정수여야 합니다.");
+    }
+
+    const normalizedRating = requireStars(rating);
+    const result = await run(
+        `UPDATE games
+         SET stars = ((stars * rating_count) + ?) / (rating_count + 1),
+             rating_count = rating_count + 1
+         WHERE id = ?`,
+        [normalizedRating, id],
+    );
+
+    return result.changes > 0 ? getGame(id) : null;
 }
 
 export async function updateGame(
@@ -431,10 +453,6 @@ export async function updateGame(
     if (input.stars !== undefined) {
         assignments.push("stars = ?");
         parameters.push(requireStars(input.stars));
-    }
-    if (input.comment !== undefined) {
-        assignments.push("comment = ?");
-        parameters.push(requireComment(input.comment));
     }
 
     if (assignments.length === 0) {

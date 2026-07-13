@@ -1,0 +1,258 @@
+.container {
+    box-sizing: border-box;
+    width: min(1320px, calc(100% - 48px));
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding: 30px 0 70px;
+    color: #f7f7f5;
+}
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #29292d;
+}
+
+.topbar button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #a7a7ad;
+    font: inherit;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    cursor: pointer;
+}
+
+.topbar button:last-child {
+    color: #a3ff58;
+}
+
+.hero {
+    display: grid;
+    grid-template-columns: minmax(380px, 1.05fr) minmax(0, .95fr);
+    gap: clamp(40px, 7vw, 100px);
+    align-items: center;
+    padding: 80px 0;
+}
+
+.cover {
+    display: grid;
+    overflow: hidden;
+    aspect-ratio: 460 / 215;
+    place-items: center;
+    border: 1px solid #343439;
+    border-radius: 24px;
+    background-color: #202024;
+    background-position: center;
+    background-size: cover;
+    box-shadow: 0 32px 80px rgba(0, 0, 0, .45);
+    color: #74747a;
+    letter-spacing: .12em;
+}
+
+.eyebrow {
+    color: #77777d;
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .16em;
+}
+
+.title {
+    margin: 12px 0 22px;
+    font-size: clamp(2.8rem, 5.5vw, 5.6rem);
+    font-weight: 800;
+    line-height: .96;
+    letter-spacing: -.06em;
+}
+
+.summary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 11px;
+}
+
+.summary span {
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: #1d1d20;
+    font-size: .78rem;
+}
+
+.summary .price {
+    background: #24331a;
+    color: #b6ff7a;
+}
+
+.summary .average {
+    color: #f5d260;
+}
+
+.summary .count {
+    color: #9b9ba1;
+}
+
+.description {
+    max-width: 650px;
+    margin-top: 27px;
+    color: #aaaab0;
+    font-size: .98rem;
+    line-height: 1.75;
+}
+
+.tags {
+    display: flex;
+    max-height: 116px;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 25px;
+    overflow: hidden;
+}
+
+.tags span {
+    padding: 6px 9px;
+    border: 1px solid #303034;
+    border-radius: 999px;
+    color: #8e8e94;
+    font-size: .7rem;
+}
+
+.ratingPanel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    padding: 35px 40px;
+    border: 1px solid #303034;
+    border-radius: 22px;
+    background: #141416;
+}
+
+.ratingTitle {
+    margin: 7px 0;
+    font-size: 1.5rem;
+    font-weight: 750;
+    letter-spacing: -.035em;
+}
+
+.ratingHint {
+    color: #828288;
+    font-size: .78rem;
+}
+
+.ratingControls {
+    display: flex;
+    min-width: 340px;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.stars {
+    display: flex;
+    gap: 2px;
+}
+
+.stars button {
+    padding: 2px;
+    border: 0;
+    background: transparent;
+    color: #3e3e43;
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color .15s ease, transform .15s ease;
+}
+
+.stars button:hover,
+.stars .activeStar {
+    color: #f4cc4c;
+    transform: translateY(-2px);
+}
+
+.submit {
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 10px;
+    background: #a3ff58;
+    color: #10120e;
+    font: inherit;
+    font-size: .82rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.submit:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+}
+
+.message {
+    width: 100%;
+    color: #a7a7ad;
+    font-size: .75rem;
+    text-align: right;
+}
+
+.state {
+    display: flex;
+    width: 100%;
+    min-height: 100dvh;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 18px;
+    color: #8c8c92;
+}
+
+.state button {
+    padding: 10px 14px;
+    border: 1px solid #39393e;
+    border-radius: 9px;
+    background: #19191c;
+    color: #fff;
+    cursor: pointer;
+}
+
+@media (max-width: 850px) {
+    .container {
+        width: min(100% - 28px, 680px);
+    }
+
+    .hero {
+        grid-template-columns: 1fr;
+        gap: 42px;
+        padding: 50px 0;
+    }
+
+    .ratingPanel {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 28px;
+    }
+
+    .ratingControls {
+        min-width: 0;
+        justify-content: flex-start;
+    }
+
+    .message {
+        text-align: left;
+    }
+}
+
+@media (max-width: 480px) {
+    .ratingControls {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .stars button {
+        font-size: 1.8rem;
+    }
+}
