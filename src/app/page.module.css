@@ -53,3 +53,12 @@
     color: #000;
     transform: translateY(-5px);
 }
+
+.minseo {
+    color: #fff;
+    text-decoration: none;
+}
+
+.minseo:hover {
+    text-decoration: underline;
+}

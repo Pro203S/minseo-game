@@ -9,7 +9,9 @@ export default function Page() {
         <div className={css.container}>
             <div className={css.texts}>
                 <InOutAnimation className={css.text} animate delay={500}>
-                    민서가
+                    <Link className={css.minseo} href="https://www.instagram.com/min_s.e0/" target='_blank'>
+                        민서
+                    </Link>가
                 </InOutAnimation>
                 <InOutAnimation className={css.text} animate delay={1500}>
                     좋아하는
