@@ -5,10 +5,10 @@ import FontReady from "@/components/FontReady";
 import { Suspense } from "react";
 
 const pretendard = localFont({
-    "src": "../../public/PretendardVariable.ttf",
-    "variable": "--font-pretendard",
-    "display": "block",
-    "preload": true,
+    src: "../../public/PretendardVariable.ttf",
+    variable: "--font-pretendard",
+    display: "block",
+    preload: true,
 });
 
 export const metadata: Metadata = {
