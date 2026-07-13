@@ -18,7 +18,7 @@ export default function Page() {
                     랜덤게임
                 </InOutAnimation>
             </div>
-            <InOutAnimation animate delay={3500} className={css.buttons}>
+            <InOutAnimation animate delay={3000} className={css.buttons}>
                 <Link href="/search">
                     <span>게임 찾아보기</span>
                 </Link>
