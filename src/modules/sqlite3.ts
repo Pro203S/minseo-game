@@ -36,6 +36,21 @@ export interface CreateGameInput {
 
 export type UpdateGameInput = Partial<CreateGameInput>;
 
+export interface SearchGamesOptions {
+    query?: string;
+    tags?: string[];
+    page?: number;
+    limit?: number;
+}
+
+export interface SearchGamesResult {
+    games: Game[];
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+}
+
 interface GameRow extends Omit<Game, "tags"> {
     tags: string;
 }
@@ -214,6 +229,10 @@ function normalizeTags(tags: string[] = []): string[] {
     return [...new Set(tags.map((tag) => tag.trim()).filter(Boolean))];
 }
 
+function escapeLike(value: string): string {
+    return value.replace(/[\\%_]/g, "\\$&");
+}
+
 function requireName(name: string): string {
     const normalizedName = name.trim();
 
@@ -292,13 +311,94 @@ export async function getGames(): Promise<Game[]> {
     return rows.map(toGame);
 }
 
-export async function getRandomGame(): Promise<Game | null> {
+export async function getRandomGame(
+    minPrice = 0,
+    maxPrice?: number,
+): Promise<Game | null> {
+    const conditions = ["price >= ?"];
+    const parameters: SqlParameter[] = [requirePrice(minPrice)];
+
+    if (maxPrice !== undefined) {
+        const normalizedMaxPrice = requirePrice(maxPrice);
+        if (normalizedMaxPrice < minPrice) {
+            throw new Error("최대 가격은 최소 가격보다 작을 수 없습니다.");
+        }
+        conditions.push("price <= ?");
+        parameters.push(normalizedMaxPrice);
+    }
+
     const row = await get<GameRow>(
         `SELECT id, name, picture, description, tags, price, stars, comment
-         FROM games ORDER BY RANDOM() LIMIT 1`,
+         FROM games
+         WHERE ${conditions.join(" AND ")}
+         ORDER BY RANDOM()
+         LIMIT 1`,
+        parameters,
     );
 
     return row ? toGame(row) : null;
+}
+
+export async function searchGames(
+    options: SearchGamesOptions = {},
+): Promise<SearchGamesResult> {
+    const page = options.page ?? 1;
+    const limit = options.limit ?? 20;
+
+    if (!Number.isInteger(page) || page < 1) {
+        throw new Error("페이지는 1 이상의 정수여야 합니다.");
+    }
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100) {
+        throw new Error("페이지 크기는 1 이상 100 이하의 정수여야 합니다.");
+    }
+
+    const conditions: string[] = [];
+    const parameters: SqlParameter[] = [];
+    const query = options.query?.trim();
+
+    if (query) {
+        conditions.push(
+            `(name LIKE ? ESCAPE '\\' COLLATE NOCASE OR
+              description LIKE ? ESCAPE '\\' COLLATE NOCASE)`,
+        );
+        const pattern = `%${escapeLike(query)}%`;
+        parameters.push(pattern, pattern);
+    }
+
+    for (const tag of normalizeTags(options.tags)) {
+        conditions.push(
+            `EXISTS (
+                SELECT 1 FROM json_each(games.tags)
+                WHERE value = ? COLLATE NOCASE
+            )`,
+        );
+        parameters.push(tag);
+    }
+
+    const where = conditions.length > 0
+        ? `WHERE ${conditions.join(" AND ")}`
+        : "";
+    const countRow = await get<{ total: number }>(
+        `SELECT COUNT(*) AS total FROM games ${where}`,
+        parameters,
+    );
+    const total = countRow?.total ?? 0;
+    const rows = await all<GameRow>(
+        `SELECT id, name, picture, description, tags, price, stars, comment
+         FROM games
+         ${where}
+         ORDER BY stars DESC, comment DESC, name COLLATE NOCASE ASC
+         LIMIT ? OFFSET ?`,
+        [...parameters, limit, (page - 1) * limit],
+    );
+
+    return {
+        games: rows.map(toGame),
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+    };
 }
 
 export async function updateGame(
