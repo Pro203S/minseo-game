@@ -13,14 +13,14 @@ export default function Page() {
                         민서
                     </Link>가
                 </InOutAnimation>
-                <InOutAnimation className={css.text} animate delay={1500}>
+                <InOutAnimation className={css.text} animate delay={1000}>
                     좋아하는
                 </InOutAnimation>
-                <InOutAnimation className={css.text} animate delay={2500}>
+                <InOutAnimation className={css.text} animate delay={1500}>
                     랜덤게임
                 </InOutAnimation>
             </div>
-            <InOutAnimation animate delay={3000} className={css.buttons}>
+            <InOutAnimation animate delay={2000} className={css.buttons}>
                 <Link href="/search">
                     <span>게임 찾아보기</span>
                 </Link>
