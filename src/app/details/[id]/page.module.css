@@ -61,12 +61,17 @@
     letter-spacing: .16em;
 }
 
+.information {
+    min-width: 0;
+}
+
 .title {
     margin: 12px 0 22px;
     font-size: clamp(2.8rem, 5.5vw, 5.6rem);
     font-weight: 800;
     line-height: .96;
     letter-spacing: -.06em;
+    overflow-wrap: anywhere;
 }
 
 .summary {
@@ -98,10 +103,16 @@
 
 .description {
     max-width: 650px;
+    max-height: 190px;
     margin-top: 27px;
+    padding-right: 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
     color: #aaaab0;
     font-size: .98rem;
     line-height: 1.75;
+    overflow-wrap: anywhere;
+    white-space: pre-line;
 }
 
 .tags {
