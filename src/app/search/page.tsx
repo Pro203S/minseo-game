@@ -121,10 +121,6 @@ function SearchContent() {
                     민서가 좋아하는 랜덤 게임
                 </button>
                 <div className={css.heroCopy}>
-                    <div className={css.heroTitle} role="heading" aria-level={1}>
-                        새로운 맛의 게임을
-                        <span>찾아보세요.</span>
-                    </div>
                 </div>
                 <div className={css.searchForm} role="search">
                     <label className={css.srOnly} htmlFor="game-query">게임 검색</label>
